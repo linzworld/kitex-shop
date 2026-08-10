@@ -8,8 +8,24 @@ AWS_ACCOUNT_ID="236763663116"
 LOCAL_IMAGE="kitex-shop-api:latest"
 REPOSITORY_NAME="kitex-shop-api"
 IMAGE_TAG="latest"
+DOCKERFILE="Dockerfile.api"
+TARGET_PLATFORM="linux/amd64"
 
 REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+echo "Building ${LOCAL_IMAGE} for ${TARGET_PLATFORM}..."
+docker buildx build \
+  --platform "${TARGET_PLATFORM}" \
+  --file "${DOCKERFILE}" \
+  --tag "${LOCAL_IMAGE}" \
+  --load \
+  .
+
+IMAGE_PLATFORM="$(docker image inspect "${LOCAL_IMAGE}" --format '{{.Os}}/{{.Architecture}}')"
+if [[ "${IMAGE_PLATFORM}" != "${TARGET_PLATFORM}" ]]; then
+  echo "Unexpected image platform: ${IMAGE_PLATFORM}; expected ${TARGET_PLATFORM}" >&2
+  exit 1
+fi
 
 echo "Checking AWS identity..."
 aws sts get-caller-identity
