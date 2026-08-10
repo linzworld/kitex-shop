@@ -1,0 +1,41 @@
+{
+  "family": "kitex-shop-item",
+  "containerDefinitions": [
+    {
+      "name": "kitex-shop-item",
+      "image": "236763663116.dkr.ecr.us-west-1.amazonaws.com/kitex-shop-item:latest",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "name": "item-rpc",
+          "containerPort": 8891,
+          "hostPort": 8891,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/kitex-shop-item-service",
+          "awslogs-region": "us-west-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      },
+      "systemControls": []
+    }
+  ],
+  "executionRoleArn": "arn:aws:iam::236763663116:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "volumes": [],
+  "placementConstraints": [],
+  "requiresCompatibilities": [
+    "MANAGED_INSTANCES"
+  ],
+  "cpu": "1024",
+  "memory": "2048"
+}
