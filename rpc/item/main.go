@@ -18,20 +18,15 @@ package main
 
 import (
 	"log"
+	"net"
 
 	item "example_shop/kitex_gen/example/shop/item/itemservice"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
-	etcd "github.com/kitex-contrib/registry-etcd"
 )
 
 func main() {
-	r, err := etcd.NewEtcdRegistry([]string{"127.0.0.1:2379"})
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	itemServiceImpl := new(ItemServiceImpl)
 	stockCli, err := NewStockClient()
 	if err != nil {
@@ -39,8 +34,13 @@ func main() {
 	}
 	itemServiceImpl.stockCli = stockCli
 
+	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:8891")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	svr := item.NewServer(itemServiceImpl,
-		server.WithRegistry(r),
+		server.WithServiceAddr(addr),
 		server.WithServerBasicInfo(
 			&rpcinfo.EndpointBasicInfo{
 				ServiceName: "example.shop.item",
