@@ -1,0 +1,32 @@
+{
+    "family": "service-connect-nginx",
+    "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::123456789012:role/ecsTaskRole",
+    "networkMode": "awsvpc",
+    "containerDefinitions": [
+        {
+        "name": "webserver",
+        "image": "public.ecr.aws/docker/library/nginx:latest",
+        "cpu": 100,
+        "portMappings": [
+            {
+                "name": "nginx",
+                "containerPort": 80,
+                "protocol": "tcp", 
+                "appProtocol": "http"
+            }
+        ],
+        "essential": true,
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/service-connect-nginx",
+                "awslogs-region": "region", 
+                "awslogs-stream-prefix": "nginx"
+            }
+        }
+        }
+    ],
+    "cpu": "256",
+    "memory": "512"
+}
