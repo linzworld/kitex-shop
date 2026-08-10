@@ -1,0 +1,11 @@
+# Local build outputs
+/api/api
+/rpc/*/output/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
