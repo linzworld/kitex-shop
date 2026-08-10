@@ -35,7 +35,7 @@
   "volumes": [],
   "placementConstraints": [],
   "requiresCompatibilities": [
-    "MANAGED_INSTANCES"
+    "FARGATE"
   ],
   "cpu": "1024",
   "memory": "2048"
