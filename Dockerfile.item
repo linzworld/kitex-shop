@@ -15,6 +15,6 @@ WORKDIR /app
 
 COPY --from=builder /app/item-server ./item-server
 
-EXPOSE 8888
+EXPOSE 8891
 
 CMD ["./item-server"]
