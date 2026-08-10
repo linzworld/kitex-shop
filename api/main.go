@@ -28,23 +28,21 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/client/callopt"
-	etcd "github.com/kitex-contrib/registry-etcd"
 )
 
 var cli itemservice.Client
 
 func main() {
-	resolver, err := etcd.NewEtcdResolver([]string{"127.0.0.1:2379"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	c, err := itemservice.NewClient("example.shop.item", client.WithResolver(resolver))
+	c, err := itemservice.NewClient(
+		"example.shop.item",
+		client.WithHostPorts("item:8891"),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 	cli = c
 
-	hz := server.New(server.WithHostPorts("localhost:8889"))
+	hz := server.New(server.WithHostPorts("0.0.0.0:8889"))
 
 	hz.GET("/api/item", Handler)
 
