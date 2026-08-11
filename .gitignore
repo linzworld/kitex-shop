@@ -9,3 +9,6 @@
 
 # Logs
 *.log
+
+aws-services.json
+aws-output-namespace-*.json
