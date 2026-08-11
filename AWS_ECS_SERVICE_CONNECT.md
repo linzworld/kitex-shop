@@ -26,7 +26,7 @@ ARN：arn:aws:servicediscovery:us-west-1:236763663116:namespace/ns-skt5xg2p35pzl
 - 使用 `awsvpc` 和 `MANAGED_INSTANCES`。
 - 服务端必须声明命名端口；`name` 必须与 Service Connect 的 `portName` 一致。
 - API 使用 HTTP，可设置 `appProtocol: http`。
-- Kitex/Thrift 使用普通 TCP，不设置 `appProtocol`，不能误设为 `grpc`。
+- Kitex-Protobuf 使用 TTHeader/TCP，不设置 `appProtocol`，不能误设为 `grpc`。
 
 Stock 端口示例：
 

@@ -28,6 +28,9 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/client/callopt"
+	"github.com/cloudwego/kitex/pkg/kerrors"
+	"github.com/cloudwego/kitex/pkg/transmeta"
+	"github.com/cloudwego/kitex/transport"
 )
 
 var cli itemservice.Client
@@ -36,6 +39,8 @@ func main() {
 	c, err := itemservice.NewClient(
 		"example.shop.item",
 		client.WithHostPorts("item:8891"),
+		client.WithTransportProtocol(transport.TTHeader),
+		client.WithMetaHandler(transmeta.ClientTTHeaderHandler),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -52,12 +57,17 @@ func main() {
 }
 
 func Handler(ctx context.Context, c *app.RequestContext) {
-	req := item.NewGetItemReq()
-	req.Id = 1024
-	resp, err := cli.GetItem(context.Background(), req, callopt.WithRPCTimeout(3*time.Second))
+	req := &item.GetItemReq{Id: 1024}
+	resp, err := cli.GetItem(ctx, req, callopt.WithRPCTimeout(3*time.Second))
 	if err != nil {
-		log.Fatal(err)
+		if bizErr, ok := kerrors.FromBizStatusError(err); ok {
+			c.String(400, "%d: %s", bizErr.BizStatusCode(), bizErr.BizMessage())
+			return
+		}
+		log.Printf("get item failed: %v", err)
+		c.String(502, "item service unavailable")
+		return
 	}
 
-	c.String(200, resp.String())
+	c.JSON(200, resp)
 }

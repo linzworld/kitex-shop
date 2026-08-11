@@ -6,7 +6,7 @@ English | [简体中文](./README_CN.md)
 [![Kitex](https://img.shields.io/badge/Kitex-0.16.3-4C8BF5)](https://www.cloudwego.io/docs/kitex/)
 [![Hertz](https://img.shields.io/badge/Hertz-0.10.4-00A6A6)](https://www.cloudwego.io/docs/hertz/)
 
-Kitex Shop is a compact Go microservice sample that demonstrates an HTTP-to-RPC request chain with [CloudWeGo Hertz](https://www.cloudwego.io/docs/hertz/) and [CloudWeGo Kitex](https://www.cloudwego.io/docs/kitex/). It includes Thrift IDLs, generated Kitex code, multi-stage Docker images, Amazon ECR publishing scripts, and AWS ECS Service Connect deployment definitions.
+Kitex Shop is a compact Go microservice sample that demonstrates an HTTP-to-RPC request chain with [CloudWeGo Hertz](https://www.cloudwego.io/docs/hertz/) and [CloudWeGo Kitex](https://www.cloudwego.io/docs/kitex/). It includes Proto3 IDLs, generated Kitex-Protobuf code, multi-stage Docker images, Amazon ECR publishing scripts, and AWS ECS Service Connect deployment definitions.
 
 The project has moved away from etcd-based service discovery. Services now connect through the stable DNS names `item` and `stock`, which are provided by a Docker network during local container runs or by ECS Service Connect in AWS.
 
@@ -19,11 +19,11 @@ Client
   v
 API (Hertz, :8889)
   |
-  | Kitex/Thrift RPC: item:8891
+  | Kitex-Protobuf RPC: item:8891
   v
 Item Service
   |
-  | Kitex/Thrift RPC: stock:8890
+  | Kitex-Protobuf RPC: stock:8890
   v
 Stock Service
 ```
@@ -44,8 +44,9 @@ The sample endpoint currently requests item ID `1024`. The Item Service returns 
 ├── rpc/
 │   ├── item/                    # Item Kitex service and Stock client
 │   └── stock/                   # Stock Kitex service
-├── idl/                         # Thrift service and data definitions
-├── kitex_gen/                   # Code generated from the Thrift IDLs
+├── idl/                         # Proto3 service and message definitions
+├── kitex_gen/                   # Code generated from the Proto3 IDLs
+├── generate.sh                 # Deterministic Kitex code generation
 ├── Dockerfile.api               # API multi-stage image
 ├── Dockerfile.item              # Item Service multi-stage image
 ├── Dockerfile.stock             # Stock Service multi-stage image
@@ -151,20 +152,21 @@ Run the repository-wide Go test command:
 go test ./...
 ```
 
-The repository currently has no dedicated unit test files, so this command primarily verifies that every package compiles. Use the Docker workflow and `curl` command above as the current end-to-end smoke test.
+The repository includes handler tests for successful responses, required ID validation, Kitex business errors, and the stock fallback behavior. Use the Docker workflow and `curl` command above as an end-to-end smoke test.
 
-## Thrift APIs
+## Protobuf APIs
 
 The service contracts live under `idl/`:
 
-- `base.thrift` defines the shared `BaseResp` type.
-- `item.thrift` defines `Item`, `GetItemReq`, `GetItemResp`, and `ItemService.GetItem`.
-- `stock.thrift` defines the stock request/response types and `StockService.GetItemStock`.
+- `base.proto` defines the shared `BaseResp` message.
+- `item.proto` defines `Item`, `GetItemReq`, `GetItemResp`, and `ItemService.GetItem`.
+- `stock.proto` defines the stock request/response messages and `StockService.GetItemStock`.
 
-When an IDL changes, regenerate the corresponding code under `kitex_gen/` with a Kitex version compatible with the module dependencies, then run:
+The services use Kitex-Protobuf over TTHeader/TCP, not standard gRPC. After changing an IDL, install Kitex v0.16.3 and regenerate all committed code with:
 
 ```bash
-gofmt -w kitex_gen
+go install github.com/cloudwego/kitex/tool/cmd/kitex@v0.16.3
+./generate.sh
 go test ./...
 ```
 
@@ -227,7 +229,7 @@ Deploy services in this order:
 2. Item publishes `item:8891` using port name `item-rpc` and connects to Stock.
 3. API joins the namespace as a client and connects to Item.
 
-Kitex uses its native Thrift transport over TCP, so the Item and Stock port mappings must not declare `appProtocol: grpc`. The API port may declare `appProtocol: http`.
+Kitex uses its native Protobuf protocol over TTHeader/TCP, so the Item and Stock port mappings must not declare `appProtocol: grpc`. The API port may declare `appProtocol: http`.
 
 See [AWS_ECS_SERVICE_CONNECT.md](./AWS_ECS_SERVICE_CONNECT.md) for namespace, port, logging, security-group, deployment-order, verification, and troubleshooting details.
 

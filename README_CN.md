@@ -6,7 +6,7 @@
 [![Kitex](https://img.shields.io/badge/Kitex-0.16.3-4C8BF5)](https://www.cloudwego.io/zh/docs/kitex/)
 [![Hertz](https://img.shields.io/badge/Hertz-0.10.4-00A6A6)](https://www.cloudwego.io/zh/docs/hertz/)
 
-Kitex Shop 是一个精简的 Go 微服务示例，用于演示基于 [CloudWeGo Hertz](https://www.cloudwego.io/zh/docs/hertz/) 和 [CloudWeGo Kitex](https://www.cloudwego.io/zh/docs/kitex/) 的 HTTP 到 RPC 完整调用链。仓库包含 Thrift IDL、Kitex 生成代码、多阶段 Docker 镜像、Amazon ECR 发布脚本以及 AWS ECS Service Connect 任务定义。
+Kitex Shop 是一个精简的 Go 微服务示例，用于演示基于 [CloudWeGo Hertz](https://www.cloudwego.io/zh/docs/hertz/) 和 [CloudWeGo Kitex](https://www.cloudwego.io/zh/docs/kitex/) 的 HTTP 到 RPC 完整调用链。仓库包含 Proto3 IDL、Kitex-Protobuf 生成代码、多阶段 Docker 镜像、Amazon ECR 发布脚本以及 AWS ECS Service Connect 任务定义。
 
 项目已不再使用 etcd 服务发现。服务现在通过稳定的 DNS 名 `item` 和 `stock` 互相连接：本地容器运行时由 Docker 网络提供解析，部署到 AWS 时由 ECS Service Connect 提供解析。
 
@@ -19,11 +19,11 @@ Kitex Shop 是一个精简的 Go 微服务示例，用于演示基于 [CloudWeGo
   v
 API（Hertz，:8889）
   |
-  | Kitex/Thrift RPC：item:8891
+  | Kitex-Protobuf RPC：item:8891
   v
 Item 商品服务
   |
-  | Kitex/Thrift RPC：stock:8890
+  | Kitex-Protobuf RPC：stock:8890
   v
 Stock 库存服务
 ```
@@ -44,8 +44,9 @@ Stock 库存服务
 ├── rpc/
 │   ├── item/                    # Item Kitex 服务及 Stock 客户端
 │   └── stock/                   # Stock Kitex 服务
-├── idl/                         # Thrift 服务和数据结构定义
-├── kitex_gen/                   # 根据 Thrift IDL 生成的代码
+├── idl/                         # Proto3 服务和消息定义
+├── kitex_gen/                   # 根据 Proto3 IDL 生成的代码
+├── generate.sh                 # 确定性的 Kitex 代码生成脚本
 ├── Dockerfile.api               # API 多阶段镜像
 ├── Dockerfile.item              # Item 服务多阶段镜像
 ├── Dockerfile.stock             # Stock 服务多阶段镜像
@@ -151,20 +152,21 @@ docker network rm kitex-shop
 go test ./...
 ```
 
-仓库目前没有独立的单元测试文件，因此该命令主要用于验证所有包都能通过编译。当前可使用上面的 Docker 启动流程和 `curl` 请求作为端到端冒烟测试。
+仓库包含 Handler 单元测试，覆盖正常响应、必填 ID 校验、Kitex 业务错误和库存降级行为。可使用上面的 Docker 启动流程和 `curl` 请求进行端到端冒烟测试。
 
-## Thrift 接口
+## Protobuf 接口
 
 服务契约位于 `idl/`：
 
-- `base.thrift` 定义通用的 `BaseResp` 类型。
-- `item.thrift` 定义 `Item`、`GetItemReq`、`GetItemResp` 和 `ItemService.GetItem`。
-- `stock.thrift` 定义库存请求、响应以及 `StockService.GetItemStock`。
+- `base.proto` 定义通用的 `BaseResp` 消息。
+- `item.proto` 定义 `Item`、`GetItemReq`、`GetItemResp` 和 `ItemService.GetItem`。
+- `stock.proto` 定义库存请求、响应消息以及 `StockService.GetItemStock`。
 
-修改 IDL 后，请使用与模块依赖兼容的 Kitex 版本重新生成 `kitex_gen/` 中的对应代码，然后运行：
+服务使用基于 TTHeader/TCP 的 Kitex-Protobuf，而不是标准 gRPC。修改 IDL 后，请安装 Kitex v0.16.3 并重新生成全部提交到仓库的代码：
 
 ```bash
-gofmt -w kitex_gen
+go install github.com/cloudwego/kitex/tool/cmd/kitex@v0.16.3
+./generate.sh
 go test ./...
 ```
 
@@ -227,7 +229,7 @@ aws ecs register-task-definition \
 2. Item 使用端口名称 `item-rpc` 发布 `item:8891`，并连接 Stock。
 3. API 以客户端身份加入命名空间，并连接 Item。
 
-Kitex 使用原生 Thrift TCP 传输，因此 Item 和 Stock 的端口映射不能声明 `appProtocol: grpc`。API 端口可以声明 `appProtocol: http`。
+Kitex 使用基于 TTHeader/TCP 的原生 Protobuf 协议，因此 Item 和 Stock 的端口映射不能声明 `appProtocol: grpc`。API 端口可以声明 `appProtocol: http`。
 
 命名空间、端口、日志、安全组、部署顺序、验证和排错的详细说明见 [AWS_ECS_SERVICE_CONNECT.md](./AWS_ECS_SERVICE_CONNECT.md)。
 

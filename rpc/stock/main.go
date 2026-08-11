@@ -23,6 +23,7 @@ import (
 	stock "example_shop/kitex_gen/example/shop/stock/stockservice"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
+	"github.com/cloudwego/kitex/pkg/transmeta"
 	"github.com/cloudwego/kitex/server"
 )
 
@@ -34,6 +35,8 @@ func main() {
 
 	svr := stock.NewServer(new(StockServiceImpl),
 		server.WithServiceAddr(addr),
+		server.WithMetaHandler(transmeta.ServerTTHeaderHandler),
+		server.WithEnableContextTimeout(true),
 		server.WithServerBasicInfo(
 			&rpcinfo.EndpointBasicInfo{
 				ServiceName: "example.shop.stock",
